@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Static Docker Analyser - Report</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    body        { font-family: monospace; background: #1e1e1e; color: #d4d4d4; padding: 2rem; }
+    h1          { color: #ffffff; font-size: 1.2rem; margin-bottom: 0.2rem; }
+    .meta       { color: #888; font-size: 0.85rem; margin-bottom: 1rem; }
+    .tabs       { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+    .tab-btn    { background: #252525; color: #888; border: 1px solid #444; padding: 0.4rem 1.2rem; cursor: pointer; font-family: monospace; font-size: 0.9rem; }
+    .tab-btn.active { background: #1e1e1e; color: #fff; border-bottom-color: #1e1e1e; border-top: 2px solid #4fc1ff; }
+    .tab-panel  { display: none; }
+    .tab-panel.active { display: block; }
+    .file       { margin-bottom: 1rem; padding: 0.8rem 1rem; border-left: 4px solid #444; background: #252525; }
+    .file.warning { border-left-color: #e5a00d; }
+    .file.ok    { border-left-color: #4caf50; }
+    .file-header { font-weight: bold; margin-bottom: 0.5rem; }
+    .file.warning .file-header { color: #e5a00d; }
+    .file.ok .file-header { color: #4caf50; }
+    .finding    { margin: 0.6rem 0 0.6rem 1rem; padding: 0.5rem; border-left: 2px solid #333; }
+    .finding-row { margin: 0.15rem 0; }
+    .label      { color: #888; display: inline-block; width: 90px; }
+    .sev-high   { color: #f44747; font-weight: bold; }
+    .sev-medium { color: #e5a00d; font-weight: bold; }
+    .sev-low    { color: #4fc1ff; font-weight: bold; }
+    .sev-review { color: #c586c0; font-weight: bold; }
+    .summary-box { margin-top: 2rem; padding: 0.8rem 1rem; background: #252525; border-left: 4px solid #888; }
+    .summary-box h2 { font-size: 1rem; margin: 0 0 0.4rem 0; color: #fff; }
+    .filter-bar { margin-bottom: 1.5rem; }
+    .filter-bar label { color: #888; margin-right: 0.5rem; }
+    .filter-bar select { background: #252525; color: #d4d4d4; border: 1px solid #444; padding: 0.3rem 0.6rem; font-family: monospace; font-size: 0.9rem; cursor: pointer; }
+    .charts-row { display: flex; gap: 2rem; margin-bottom: 2rem; flex-wrap: wrap; }
+    .chart-box  { background: #252525; padding: 1rem; flex: 1; min-width: 300px; }
+    .chart-box h3 { color: #fff; font-size: 0.95rem; margin: 0 0 0.8rem 0; }
+    .service-list { background: #252525; padding: 1rem; }
+    .service-list h3 { color: #fff; font-size: 0.95rem; margin: 0 0 0.8rem 0; }
+    .svc-row    { margin-bottom: 0.6rem; padding-bottom: 0.6rem; border-bottom: 1px solid #333; }
+    .svc-name   { color: #4fc1ff; margin-bottom: 0.2rem; }
+    .svc-tag    { display: inline-block; margin: 0.1rem 0.2rem 0.1rem 0; padding: 0.1rem 0.4rem; font-size: 0.8rem; background: #1e1e1e; border: 1px solid #444; }
+    canvas      { max-height: 300px; }
+  </style>
+</head>
+<body>
+  <h1>Static Docker Analyser</h1>
+  <div class="meta">
+    Report generated : 2026-05-10 17:38:51<br>
+    Path scanned     : ./Test-Files<br>
+    Checks loaded    : Excessive Linux Capabilities, Docker Socket Exposure, Unsafe Host Volume Mount, Host Network Mode, No Resource Limits, Privileged Container, Running as Root
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('findings')">Findings</button>
+    <button class="tab-btn" onclick="switchTab('summary')">Summary</button>
+  </div>
+
+  <!-- FINDINGS TAB -->
+  <div id="tab-findings" class="tab-panel active">
+    <div class="file warning" data-file="test_capabilities.yml">
+  <div class="file-header">WARNING [test_capabilities.yml]</div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> Excessive Linux Capabilities</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-high">HIGH</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> app</div>
+    <div class="finding-row"><span class="label">Value    :</span> cap_add: SYS_ADMIN</div>
+    <div class="finding-row"><span class="label">Detail   :</span> Capability 'SYS_ADMIN' grants broad kernel-level access and significantly undermines container isolation.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Remove this capability. If specific functionality is required, identify the minimal capability needed and document the justification.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> Excessive Linux Capabilities</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> db</div>
+    <div class="finding-row"><span class="label">Value    :</span> cap_add: NET_ADMIN</div>
+    <div class="finding-row"><span class="label">Detail   :</span> Capability 'NET_ADMIN' expands the container attack surface and may be exploited depending on the deployment context.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Review whether this capability is strictly necessary. If so, ensure the container is otherwise hardened and the justification is documented.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> No Resource Limits</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> app</div>
+    <div class="finding-row"><span class="label">Value    :</span> no mem_limit or cpus set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> No Resource Limits</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> db</div>
+    <div class="finding-row"><span class="label">Value    :</span> no mem_limit or cpus set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> No Resource Limits</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> cache</div>
+    <div class="finding-row"><span class="label">Value    :</span> no mem_limit or cpus set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> Running as Root</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> app</div>
+    <div class="finding-row"><span class="label">Value    :</span> no user set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> Running as Root</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> db</div>
+    <div class="finding-row"><span class="label">Value    :</span> no user set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> Running as Root</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> cache</div>
+    <div class="finding-row"><span class="label">Value    :</span> no user set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.</div>
+  </div>
+</div>
+<div class="file warning" data-file="test_docker_socket.yml">
+  <div class="file-header">WARNING [test_docker_socket.yml]</div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> Docker Socket Exposure</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-high">HIGH</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> app</div>
+    <div class="finding-row"><span class="label">Value    :</span> /var/run/docker.sock:/var/run/docker.sock</div>
+    <div class="finding-row"><span class="label">Detail   :</span> Mounting the Docker socket gives the container full control over the Docker daemon, enabling host takeover.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Remove the Docker socket mount. If container management access is required, restrict access using Unix socket permissions or protect the API with TLS.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> No Resource Limits</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> app</div>
+    <div class="finding-row"><span class="label">Value    :</span> no mem_limit or cpus set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> Running as Root</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> app</div>
+    <div class="finding-row"><span class="label">Value    :</span> no user set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.</div>
+  </div>
+</div>
+<div class="file warning" data-file="test_host_volumes.yml">
+  <div class="file-header">WARNING [test_host_volumes.yml]</div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> Unsafe Host Volume Mount</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-high">HIGH</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> app</div>
+    <div class="finding-row"><span class="label">Value    :</span> /etc:/etc</div>
+    <div class="finding-row"><span class="label">Detail   :</span> Sensitive host path '/etc' is mounted into the container, exposing critical system resources.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Remove the host path mount. Use named Docker volumes for persistent data and avoid mounting system directories into containers.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> Unsafe Host Volume Mount</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-low">LOW</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> db</div>
+    <div class="finding-row"><span class="label">Value    :</span> /opt/myapp/data:/data</div>
+    <div class="finding-row"><span class="label">Detail   :</span> Absolute host path '/opt/myapp/data' is bind-mounted into the container. The risk depends on the contents of this directory and cannot be confirmed by static analysis alone.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Review whether this bind mount is necessary and check the directory does not contain secrets or credentials. Prefer named Docker volumes where possible.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> No Resource Limits</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> app</div>
+    <div class="finding-row"><span class="label">Value    :</span> no mem_limit or cpus set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> No Resource Limits</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> db</div>
+    <div class="finding-row"><span class="label">Value    :</span> no mem_limit or cpus set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> Running as Root</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> app</div>
+    <div class="finding-row"><span class="label">Value    :</span> no user set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> Running as Root</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> db</div>
+    <div class="finding-row"><span class="label">Value    :</span> no user set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.</div>
+  </div>
+</div>
+<div class="file warning" data-file="test_network_mode.yml">
+  <div class="file-header">WARNING [test_network_mode.yml]</div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> Host Network Mode</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> app</div>
+    <div class="finding-row"><span class="label">Value    :</span> host</div>
+    <div class="finding-row"><span class="label">Detail   :</span> Removes Docker network isolation, container shares host network stack directly.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Use bridge networking and expose only required ports with the 'ports' directive.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> No Resource Limits</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> app</div>
+    <div class="finding-row"><span class="label">Value    :</span> no mem_limit or cpus set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> Running as Root</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> app</div>
+    <div class="finding-row"><span class="label">Value    :</span> no user set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.</div>
+  </div>
+</div>
+<div class="file warning" data-file="test_noissues.yml">
+  <div class="file-header">WARNING [test_noissues.yml]</div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> No Resource Limits</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> app</div>
+    <div class="finding-row"><span class="label">Value    :</span> no mem_limit or cpus set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> Running as Root</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> app</div>
+    <div class="finding-row"><span class="label">Value    :</span> no user set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.</div>
+  </div>
+</div>
+<div class="file warning" data-file="test_privileged.yml">
+  <div class="file-header">WARNING [test_privileged.yml]</div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> No Resource Limits</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> app</div>
+    <div class="finding-row"><span class="label">Value    :</span> no mem_limit or cpus set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> Privileged Container</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-high">HIGH</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> app</div>
+    <div class="finding-row"><span class="label">Value    :</span> privileged: true</div>
+    <div class="finding-row"><span class="label">Detail   :</span> Grants the container full access to the host kernel, making container escape trivial.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Remove privileged mode and grant only the specific Linux capabilities the container needs.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> Running as Root</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> app</div>
+    <div class="finding-row"><span class="label">Value    :</span> no user set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.</div>
+  </div>
+</div>
+<div class="file warning" data-file="test_resource_limits.yml">
+  <div class="file-header">WARNING [test_resource_limits.yml]</div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> No Resource Limits</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> app</div>
+    <div class="finding-row"><span class="label">Value    :</span> no mem_limit or cpus set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> No Resource Limits</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-low">LOW</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> db</div>
+    <div class="finding-row"><span class="label">Value    :</span> no cpus limit set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> No CPU limit is set. The container could potentially consume unlimited host CPU if it misbehaves or is compromised.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set cpus at the service level or cpus under deploy.resources.limits.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> No Resource Limits</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-low">LOW</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> cache</div>
+    <div class="finding-row"><span class="label">Value    :</span> no mem_limit set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> No memory limit is set. The container could potentially consume unlimited host memory if it misbehaves or is compromised.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set mem_limit at the service level or memory under deploy.resources.limits.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> Running as Root</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> app</div>
+    <div class="finding-row"><span class="label">Value    :</span> no user set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> Running as Root</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> db</div>
+    <div class="finding-row"><span class="label">Value    :</span> no user set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> Running as Root</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> cache</div>
+    <div class="finding-row"><span class="label">Value    :</span> no user set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.</div>
+  </div>
+</div>
+<div class="file warning" data-file="test_running_as_root.yml">
+  <div class="file-header">WARNING [test_running_as_root.yml]</div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> No Resource Limits</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> app</div>
+    <div class="finding-row"><span class="label">Value    :</span> no mem_limit or cpus set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> No Resource Limits</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> db</div>
+    <div class="finding-row"><span class="label">Value    :</span> no mem_limit or cpus set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> Running as Root</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-high">HIGH</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> app</div>
+    <div class="finding-row"><span class="label">Value    :</span> user: root</div>
+    <div class="finding-row"><span class="label">Detail   :</span> The container is explicitly configured to run as root. If compromised, an attacker has immediate root access within the container.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Create a non-root user in your Dockerfile and set user: to that user or a non-zero UID.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-row"><span class="label">Check    :</span> Running as Root</div>
+    <div class="finding-row"><span class="label">Severity :</span> <span class="sev-medium">MEDIUM</span></div>
+    <div class="finding-row"><span class="label">Service  :</span> db</div>
+    <div class="finding-row"><span class="label">Value    :</span> no user set</div>
+    <div class="finding-row"><span class="label">Detail   :</span> Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.</div>
+    <div class="finding-row"><span class="label">Fix      :</span> Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.</div>
+  </div>
+</div>
+
+    <div class="summary-box">
+      <h2>--- Summary ---</h2>
+      <div>Files scanned &nbsp;&nbsp;&nbsp;&nbsp; : 8</div>
+      <div>Files with issues : 8</div>
+    </div>
+  </div>
+
+  <!-- SUMMARY TAB -->
+  <div id="tab-summary" class="tab-panel">
+    <div class="filter-bar">
+      <label>Filter by file:</label>
+      <select id="file-filter" onchange="updateSummary()">
+        <option value="__all__">All Files</option>
+      </select>
+    </div>
+    <div class="charts-row">
+      <div class="chart-box">
+        <h3>Misconfigurations by Type</h3>
+        <canvas id="barChart"></canvas>
+      </div>
+      <div class="chart-box">
+        <h3>Findings by Severity</h3>
+        <canvas id="pieChart"></canvas>
+      </div>
+    </div>
+    <div class="service-list">
+      <h3>Misconfigurations per Service</h3>
+      <div id="service-breakdown"></div>
+    </div>
+  </div>
+
+  <script>
+    const scanData = [{"filename": "test_capabilities.yml", "findings": [{"service": "app", "severity": "HIGH", "value": "cap_add: SYS_ADMIN", "detail": "Capability 'SYS_ADMIN' grants broad kernel-level access and significantly undermines container isolation.", "fix": "Remove this capability. If specific functionality is required, identify the minimal capability needed and document the justification.", "check": "Excessive Linux Capabilities"}, {"service": "db", "severity": "MEDIUM", "value": "cap_add: NET_ADMIN", "detail": "Capability 'NET_ADMIN' expands the container attack surface and may be exploited depending on the deployment context.", "fix": "Review whether this capability is strictly necessary. If so, ensure the container is otherwise hardened and the justification is documented.", "check": "Excessive Linux Capabilities"}, {"service": "app", "severity": "MEDIUM", "value": "no mem_limit or cpus set", "detail": "No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.", "fix": "Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.", "check": "No Resource Limits"}, {"service": "db", "severity": "MEDIUM", "value": "no mem_limit or cpus set", "detail": "No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.", "fix": "Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.", "check": "No Resource Limits"}, {"service": "cache", "severity": "MEDIUM", "value": "no mem_limit or cpus set", "detail": "No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.", "fix": "Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.", "check": "No Resource Limits"}, {"service": "app", "severity": "MEDIUM", "value": "no user set", "detail": "Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.", "fix": "Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.", "check": "Running as Root"}, {"service": "db", "severity": "MEDIUM", "value": "no user set", "detail": "Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.", "fix": "Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.", "check": "Running as Root"}, {"service": "cache", "severity": "MEDIUM", "value": "no user set", "detail": "Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.", "fix": "Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.", "check": "Running as Root"}]}, {"filename": "test_docker_socket.yml", "findings": [{"service": "app", "severity": "HIGH", "value": "/var/run/docker.sock:/var/run/docker.sock", "detail": "Mounting the Docker socket gives the container full control over the Docker daemon, enabling host takeover.", "fix": "Remove the Docker socket mount. If container management access is required, restrict access using Unix socket permissions or protect the API with TLS.", "check": "Docker Socket Exposure"}, {"service": "app", "severity": "MEDIUM", "value": "no mem_limit or cpus set", "detail": "No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.", "fix": "Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.", "check": "No Resource Limits"}, {"service": "app", "severity": "MEDIUM", "value": "no user set", "detail": "Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.", "fix": "Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.", "check": "Running as Root"}]}, {"filename": "test_host_volumes.yml", "findings": [{"service": "app", "severity": "HIGH", "value": "/etc:/etc", "detail": "Sensitive host path '/etc' is mounted into the container, exposing critical system resources.", "fix": "Remove the host path mount. Use named Docker volumes for persistent data and avoid mounting system directories into containers.", "check": "Unsafe Host Volume Mount"}, {"service": "db", "severity": "LOW", "value": "/opt/myapp/data:/data", "detail": "Absolute host path '/opt/myapp/data' is bind-mounted into the container. The risk depends on the contents of this directory and cannot be confirmed by static analysis alone.", "fix": "Review whether this bind mount is necessary and check the directory does not contain secrets or credentials. Prefer named Docker volumes where possible.", "check": "Unsafe Host Volume Mount"}, {"service": "app", "severity": "MEDIUM", "value": "no mem_limit or cpus set", "detail": "No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.", "fix": "Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.", "check": "No Resource Limits"}, {"service": "db", "severity": "MEDIUM", "value": "no mem_limit or cpus set", "detail": "No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.", "fix": "Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.", "check": "No Resource Limits"}, {"service": "app", "severity": "MEDIUM", "value": "no user set", "detail": "Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.", "fix": "Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.", "check": "Running as Root"}, {"service": "db", "severity": "MEDIUM", "value": "no user set", "detail": "Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.", "fix": "Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.", "check": "Running as Root"}]}, {"filename": "test_network_mode.yml", "findings": [{"service": "app", "severity": "MEDIUM", "value": "host", "detail": "Removes Docker network isolation, container shares host network stack directly.", "fix": "Use bridge networking and expose only required ports with the 'ports' directive.", "check": "Host Network Mode"}, {"service": "app", "severity": "MEDIUM", "value": "no mem_limit or cpus set", "detail": "No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.", "fix": "Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.", "check": "No Resource Limits"}, {"service": "app", "severity": "MEDIUM", "value": "no user set", "detail": "Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.", "fix": "Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.", "check": "Running as Root"}]}, {"filename": "test_noissues.yml", "findings": [{"service": "app", "severity": "MEDIUM", "value": "no mem_limit or cpus set", "detail": "No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.", "fix": "Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.", "check": "No Resource Limits"}, {"service": "app", "severity": "MEDIUM", "value": "no user set", "detail": "Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.", "fix": "Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.", "check": "Running as Root"}]}, {"filename": "test_privileged.yml", "findings": [{"service": "app", "severity": "MEDIUM", "value": "no mem_limit or cpus set", "detail": "No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.", "fix": "Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.", "check": "No Resource Limits"}, {"service": "app", "severity": "HIGH", "value": "privileged: true", "detail": "Grants the container full access to the host kernel, making container escape trivial.", "fix": "Remove privileged mode and grant only the specific Linux capabilities the container needs.", "check": "Privileged Container"}, {"service": "app", "severity": "MEDIUM", "value": "no user set", "detail": "Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.", "fix": "Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.", "check": "Running as Root"}]}, {"filename": "test_resource_limits.yml", "findings": [{"service": "app", "severity": "MEDIUM", "value": "no mem_limit or cpus set", "detail": "No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.", "fix": "Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.", "check": "No Resource Limits"}, {"service": "db", "severity": "LOW", "value": "no cpus limit set", "detail": "No CPU limit is set. The container could potentially consume unlimited host CPU if it misbehaves or is compromised.", "fix": "Set cpus at the service level or cpus under deploy.resources.limits.", "check": "No Resource Limits"}, {"service": "cache", "severity": "LOW", "value": "no mem_limit set", "detail": "No memory limit is set. The container could potentially consume unlimited host memory if it misbehaves or is compromised.", "fix": "Set mem_limit at the service level or memory under deploy.resources.limits.", "check": "No Resource Limits"}, {"service": "app", "severity": "MEDIUM", "value": "no user set", "detail": "Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.", "fix": "Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.", "check": "Running as Root"}, {"service": "db", "severity": "MEDIUM", "value": "no user set", "detail": "Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.", "fix": "Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.", "check": "Running as Root"}, {"service": "cache", "severity": "MEDIUM", "value": "no user set", "detail": "Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.", "fix": "Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.", "check": "Running as Root"}]}, {"filename": "test_running_as_root.yml", "findings": [{"service": "app", "severity": "MEDIUM", "value": "no mem_limit or cpus set", "detail": "No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.", "fix": "Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.", "check": "No Resource Limits"}, {"service": "db", "severity": "MEDIUM", "value": "no mem_limit or cpus set", "detail": "No memory or CPU limits are set. This is a best practice violation that may increase risk if the container misbehaves or is compromised, potentially impacting other services on the host.", "fix": "Set mem_limit and cpus at the service level, or define limits under deploy.resources.limits.", "check": "No Resource Limits"}, {"service": "app", "severity": "HIGH", "value": "user: root", "detail": "The container is explicitly configured to run as root. If compromised, an attacker has immediate root access within the container.", "fix": "Create a non-root user in your Dockerfile and set user: to that user or a non-zero UID.", "check": "Running as Root"}, {"service": "db", "severity": "MEDIUM", "value": "no user set", "detail": "Informational: no user directive found in the Compose file. The container may run as root depending on the base image. If combined with other misconfigurations such as privileged mode or unsafe volume mounts this can become a medium risk issue.", "fix": "Set user: to a non-root user or non-zero UID to explicitly prevent root execution regardless of the base image.", "check": "Running as Root"}]}];
+    const allFilenames = ["test_capabilities.yml", "test_docker_socket.yml", "test_host_volumes.yml", "test_network_mode.yml", "test_noissues.yml", "test_privileged.yml", "test_resource_limits.yml", "test_running_as_root.yml"];
+
+    // populate file filter dropdown
+    const sel = document.getElementById("file-filter");
+    allFilenames.forEach(fn => {
+      const opt = document.createElement("option");
+      opt.value = fn;
+      opt.textContent = fn;
+      sel.appendChild(opt);
+    });
+
+    let barChart, pieChart;
+
+    function switchTab(name) {
+      document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.getElementById("tab-" + name).classList.add("active");
+      event.target.classList.add("active");
+      if (name === "summary") updateSummary();
+    }
+
+    function getFilteredFindings() {
+      const selected = document.getElementById("file-filter").value;
+      let findings = [];
+      scanData.forEach(result => {
+        if (selected === "__all__" || result.filename === selected) {
+          result.findings.forEach(f => findings.push(f));
+        }
+      });
+      return findings;
+    }
+
+    function updateSummary() {
+      const findings = getFilteredFindings();
+
+      // count by check type
+      const checkCounts = {};
+      findings.forEach(f => {
+        const name = f.check || "Unknown";
+        checkCounts[name] = (checkCounts[name] || 0) + 1;
+      });
+
+      // count by severity
+      const sevCounts = { HIGH: 0, MEDIUM: 0, LOW: 0, REVIEW: 0 };
+      findings.forEach(f => {
+        const s = f.severity || "UNKNOWN";
+        if (sevCounts[s] !== undefined) sevCounts[s]++;
+        else sevCounts[s] = 1;
+      });
+
+      // bar chart
+      const barLabels = Object.keys(checkCounts);
+      const barData = Object.values(checkCounts);
+      if (barChart) barChart.destroy();
+      barChart = new Chart(document.getElementById("barChart"), {
+        type: "bar",
+        data: {
+          labels: barLabels,
+          datasets: [{ label: "Count", data: barData,
+            backgroundColor: "#4fc1ff", borderColor: "#4fc1ff", borderWidth: 1 }]
+        },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: "#888" }, grid: { color: "#333" } },
+            y: { ticks: { color: "#d4d4d4" }, grid: { color: "#333" } }
+          }
+        }
+      });
+
+      // pie chart
+      const sevColors = { HIGH: "#f44747", MEDIUM: "#e5a00d", LOW: "#4fc1ff", REVIEW: "#c586c0" };
+      const pieLabels = Object.keys(sevCounts).filter(k => sevCounts[k] > 0);
+      const pieData = pieLabels.map(k => sevCounts[k]);
+      const pieColors = pieLabels.map(k => sevColors[k] || "#888");
+      if (pieChart) pieChart.destroy();
+      pieChart = new Chart(document.getElementById("pieChart"), {
+        type: "pie",
+        data: {
+          labels: pieLabels,
+          datasets: [{ data: pieData, backgroundColor: pieColors, borderColor: "#1e1e1e", borderWidth: 2 }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: "#d4d4d4" } } }
+        }
+      });
+
+      // per service breakdown
+      const selected = document.getElementById("file-filter").value;
+      const serviceCounts = {};
+      scanData.forEach(result => {
+        if (selected === "__all__" || result.filename === selected) {
+          result.findings.forEach(f => {
+            const key = (selected === "__all__" ? result.filename + " > " : "") + f.service;
+            if (!serviceCounts[key]) serviceCounts[key] = {};
+            const check = f.check || "Unknown";
+            serviceCounts[key][check] = (serviceCounts[key][check] || 0) + 1;
+          });
+        }
+      });
+
+      const el = document.getElementById("service-breakdown");
+      if (Object.keys(serviceCounts).length === 0) {
+        el.innerHTML = '<div style="color:#888">No findings for selected file.</div>';
+        return;
+      }
+      el.innerHTML = Object.entries(serviceCounts).map(([svc, checks]) => {
+        const tags = Object.entries(checks).map(([check, count]) =>
+          `<span class="svc-tag">${check}: ${count}</span>`).join("");
+        return `<div class="svc-row"><div class="svc-name">${svc}</div>${tags}</div>`;
+      }).join("");
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+version: "3"
+services:
+  app:
+    image: nginx
+    cap_add:
+      - SYS_ADMIN
+  db:
+    image: postgres
+    cap_add:
+      - NET_ADMIN
+  cache:
+    image: redis
+    cap_add:
+      - SETUID

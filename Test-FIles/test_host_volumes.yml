@@ -1,0 +1,10 @@
+version: "3"
+services:
+  app:
+    image: nginx
+    volumes:
+      - /etc:/etc
+  db:
+    image: postgres
+    volumes:
+      - /opt/myapp/data:/data

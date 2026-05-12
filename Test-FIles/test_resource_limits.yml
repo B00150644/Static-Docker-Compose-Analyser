@@ -1,0 +1,10 @@
+version: "3"
+services:
+  app:
+    image: nginx
+  db:
+    image: postgres
+    mem_limit: 512m
+  cache:
+    image: redis
+    cpus: "0.5"
